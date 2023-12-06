@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "library management system"
+version = "0.1.0"
+description = ""
+authors = ["saad-ali06 <saadshahzad818@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.27.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
