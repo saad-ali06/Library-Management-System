@@ -94,6 +94,7 @@ class Library:
     def __init__(self):
         self.books = []
         self.borrowers = []
+        self.borrowers_count = 0 
         self.lock = threading.Lock()
 
     # add Book to Library.
@@ -242,22 +243,51 @@ class Library:
             for book in self.books:
                 if fic == book.fiction and type == book.type:
                     find_books.append(book)
+                    find = True
         else:
             for book in self.books:
                 if fic != book.fiction and type == book.type:
                     find_books.append(book)
-            
-                    
-                
+                    find = True
+        return find_books if find else None
         
-
 """
 This class going to help manage the main func which going to use adove classes.
 repeatedly used code are combined into functions in Main class.
 Define all the main functions like add, delete, borrow etc 
 """
 class Main:
-    # going to define all function like add,delete, borrow etc.
-    pass  
-
+    # going to define all function like input, borrow etc.
+    def input_book():
+        try:
+            #  title, author, isbn, quantity_available,type
+            fic =  input("Enter Y/y For Fictional or any else for Non-Fictional(like N/n): ")
+            fic = fic == "Y" or fic == "y"
+            title = input("Enter Book Title: ")
+            author = input("Enter Book author: ")
+            isbn = input("Enter Book ISBN: ") 
+            if isvalid_isbn(isbn):
+                print("your ISBN verified and Accepted")
+            else:
+                print("ISBN is Incorret..")
+                raise ValueError
+            quantity_available = int(input("Enter Book quantity_available: "))
+            type = int(input("""For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6
+                         Other: 7
+                         Enter Book Genre: """))
+            if fic:
+                return Fictional(title,author,isbn,quantity_available,type)
+            else: 
+                return Nonfictional(title,author,isbn,quantity_available,type)
+        except Exception as e:
+            print("---Wrong Input ---\n Case by: ",e)
+        
+       
+    def input_borrower():
+        
+        name = input("Enter name of the Borrower: ")
+        address = input("Enter Address of the Borrower: ")
+        
+        return Borrower(name,address) 
+        
   
