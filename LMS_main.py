@@ -5,6 +5,7 @@ from threading import Lock
 from csv import DictReader,DictWriter
 import logging
 from os.path import getsize,exists
+import threading
 
 #  Files_paths
 inventory_file = 'inventory.csv'
@@ -178,11 +179,15 @@ class Library:
     @log_timestamp
     def return_book(self, borrower, book):
         self.lock.acquire()
-        book.quantity_available += 1
-        index_of_book = borrower.borrowed_books.index(book)
-        # Remove book from borrower list.
-        removed_book = borrower.borrowed_books.pop(index_of_book)
-        logger1.info(f"{removed_book.title} Remove from {borrower.name}")
+        
+        if book in self.books:
+            book.quantity_available += 1
+            index_of_book = borrower.borrowed_books.index(book)
+            # Remove book from borrower list.
+            removed_book = borrower.borrowed_books.pop(index_of_book)
+            logger1.info(f"{removed_book.title} Remove from {borrower.name}")
+        else:
+            print("The you are returning isn't ours Return.\nPlease return it where it belongs.  ")
         
         self.lock.release()
         
@@ -313,6 +318,10 @@ class Library:
         print("Borrower not Found..")
         return (False,None)
     
+    def borrowers_books(self):
+        for borrower in self.borrowers:
+            print(borrower.borrowed_books)
+    
     
     # this finction simply show the books and there availablity.
     def display_books(self):
@@ -324,15 +333,16 @@ class Library:
                 f_books.append(book)
             else:
                 nf_books.append(book)
-                
+        print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6, Other: 7
+                  Fictional Books are : """)        
+        
         for f in f_books:
-            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6, Other: 7
-                  Fictional Books are : """)
             print(f"Title = {f.title}; Auhtor = {f.author} ; Genre = {f.type}; Quantity = {f.quantity_available}")
         
-        for nf in nf_books:
-            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6, Other: 7
+        print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6, Other: 7
                   Non-Fictional Books are : """)
+        for nf in nf_books:
+            
             print(f"Title = {nf.title}; Auhtor = {nf.author} ; Genre = {nf.type}; Quantity = {nf.quantity_available}")
         print("------END-------")
     
@@ -443,7 +453,10 @@ if __name__ == "__main__" :
                 4 Display Borrowers  
                 5 for borrow Book, 
                 6 for return a Book, 
-                7 for delete book """))
+                7 for delete book,
+                8 for multi borrow request,
+                9 for multiple books return 
+                """))
             if a == 1:
                 library.load_book_inventory(inventory_file)
                 book = main.input_book()
@@ -479,7 +492,7 @@ if __name__ == "__main__" :
                 name = input("Select a Borrower by input his/her name: ")
                 b,borrower = library.select_borrower(name)
                 if b:
-                    library.display_books()
+                    library.borrowers_books()
                     book_title = input("Enter Book Title : ")
                     c,book=library.book_search_by_title(title=book_title)
                     if c:
@@ -497,6 +510,65 @@ if __name__ == "__main__" :
                     print('Book deleted')
                 else:
                     print("Book not Found..")
+            
+            elif a == 8:
+                library.load_book_inventory(inventory_file)
+                library.load_borrowers_data(borrowers_file)
+                library.display_borrowers()
+                name = input("Select a Borrower by input his/her name: ")
+                b,borrower = library.select_borrower(name)
+                if b:
+                    value = int(input("How many Book do u want to borrow"))
+                    i = 0
+                    threads = []
+                    while i<value:
+                        library.display_books()
+                        book_title = input("Enter Book Title : ")
+                        c,book=library.book_search_by_title(title=book_title)
+                        if c:
+                            thread = threading.Thread(target=library.borrow_book, args=(borrower, book))
+                            threads.append(thread)
+                            thread.start()
+                        else:
+                            print("Book not Found..")
+                        i+=1
+                        for thread in threads:
+                            thread.join()
+                        library.save_book_inventory(inventory_file)
+                        library.save_borrowers_data(borrowers_file)
+                    
+                else:
+                    print("Borrower not found")
+            
+            elif a == 9:
+                library.load_book_inventory(inventory_file)
+                library.load_borrowers_data(borrowers_file)
+                library.display_borrowers()
+                name = input("Select a Borrower by input his/her name: ")
+                b,borrower = library.select_borrower(name)
+                if b:
+                    value = int(input("How many Book do u want to Reuturn"))
+                    i = 0
+                    threads = []
+                    while i<value:
+                        library.borrowers_books()
+                        book_title = input("Enter Book Title : ")
+                        c,book=library.book_search_by_title(title=book_title)
+                        if c:
+                            thread = threading.Thread(target=library.return_book, args=(borrower, book))
+                            threads.append(thread)
+                            thread.start()
+                        else:
+                            print("Book not Found..")
+                        i+=1
+                    for thread in threads:
+                        thread.join()
+                    
+                else:
+                    print("Borrower not found")
+                
+                    
+                
 
             
         # except Exception as e:
@@ -504,6 +576,7 @@ if __name__ == "__main__" :
         #     break
         
     """ Below comment are for checking different function error.."""
+    
     # # book = main.input_book()
     # # library.add_book(book)
     # # library.save_book_inventory(inventory_file)
