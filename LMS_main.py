@@ -511,6 +511,9 @@ if __name__ == "__main__" :
                 else:
                     print("Book not Found..")
             
+    # To handle concurrency we use multithreading.
+    # Because this task involved file I/O approuch in it.
+    
             elif a == 8:
                 library.load_book_inventory(inventory_file)
                 library.load_borrowers_data(borrowers_file)
