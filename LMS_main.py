@@ -182,7 +182,7 @@ class Library:
         index_of_book = borrower.borrowed_books.index(book)
         # Remove book from borrower list.
         removed_book = borrower.borrowed_books.pop(index_of_book)
-        print(f"{removed_book.title} Remove from {borrower.name}")
+        logger1.info(f"{removed_book.title} Remove from {borrower.name}")
         
         self.lock.release()
         
@@ -429,63 +429,23 @@ if __name__ == "__main__" :
               
               """)
     main = Main()
-    # book = main.input_book()
-    # library.add_book(book)
-    # library.save_book_inventory(inventory_file)
-    library.load_book_inventory(inventory_file)
-    library.load_borrowers_data(borrowers_file)
-    for book in library.books:
-        print(book.title,type(book.fiction))
-    
-    # book = main.input_book()
-    # if library.book_search(isbn=book.isbn):
-    #     library.append_book(book)
-    #     library.save_book_inventory(inventory_file)
-    # else:
-    #     library.add_book(book)
-    #     library.save_book_inventory(inventory_file)
-        
-    # library.display_books()
-    # library.display_borrowers()
-    
-    # library.del_book(book)
-    
-    # library.display_books()
-    # library.display_borrowers()
-    
-    # borrower = main.input_borrower()
-    # main.add_borrower(borrower)
-    # library.display_borrowers()
-    
-    book1 = Fictional("The Catcher in the Rye", "J.D. Salinger", "123-4-5678", 5,2)
-    book2 = Nonfictional("To Kill a Mockingbird", "Harper Lee", "456-7-8901", 3,5)
 
-    borrower1 = Borrower("Aizaz", "123 Main St")
-    borrower2 = Borrower("Amar", "456 Oak St")
-    library.display_books()
-    library.display_borrowers()
-    
-    library.borrow_book(borrower1, book1)
-    
-    library.display_books()
-    library.display_borrowers()
-    
-    library.return_book(borrower1, book1)
-    
-    library.display_books()
-    library.display_borrowers()
-
+    a = input("Select Y/N for loading data from File..")
+    if a=='Y' or a=='y':
+        library.load_book_inventory(inventory_file)
+        library.load_borrowers_data(borrowers_file)
     while True:
-        try:  
-            a = input("Select Y/N for loading data from File..")
-            if a=='Y' or a=='y':
-                library.load_book_inventory()
-                library.load_borrowers_data()
-            a = input(""" ---Select U choice---
-                1 for add Book, 2 for add Borrower, 3 Display Books, 4 Display Borrowers  
-                5 for borrow Book, 6 for return a Book, 7 for delete book """)
+        # try:  with try program show value error so I commented it out.
+            a = int(input(""" ---Select U choice---
+                1 for add Book, 
+                2 for add Borrower, 
+                3 Display Books, 
+                4 Display Borrowers  
+                5 for borrow Book, 
+                6 for return a Book, 
+                7 for delete book """))
             if a == 1:
-                library.load_book_inventory()
+                library.load_book_inventory(inventory_file)
                 book = main.input_book()
                 library.add_book(book)
                 library.save_book_inventory(inventory_file)
@@ -533,12 +493,60 @@ if __name__ == "__main__" :
                 c,book=library.book_search_by_title(title=book_title)
                 if c:
                     library.del_book(book=book)
+                    library.save_book_inventory(inventory_file)
                     print('Book deleted')
                 else:
                     print("Book not Found..")
+
             
+        # except Exception as e:
+        #     print(f"Program Crashed Because of :\n{e}")
+        #     break
         
-            
-        except Exception as e:
-            print(f"Program Crashed Because of :\n{e}")
+    """ Below comment are for checking different function error.."""
+    # # book = main.input_book()
+    # # library.add_book(book)
+    # # library.save_book_inventory(inventory_file)
+    # library.load_book_inventory(inventory_file)
+    # library.load_borrowers_data(borrowers_file)
+    # for book in library.books:
+    #     print(book.title,type(book.fiction))
+    
+    # # book = main.input_book()
+    # # if library.book_search(isbn=book.isbn):
+    # #     library.append_book(book)
+    # #     library.save_book_inventory(inventory_file)
+    # # else:
+    # #     library.add_book(book)
+    # #     library.save_book_inventory(inventory_file)
+        
+    # # library.display_books()
+    # # library.display_borrowers()
+    
+    # # library.del_book(book)
+    
+    # # library.display_books()
+    # # library.display_borrowers()
+    
+    # # borrower = main.input_borrower()
+    # # main.add_borrower(borrower)
+    # # library.display_borrowers()
+    
+    # book1 = Fictional("The Catcher in the Rye", "J.D. Salinger", "123-4-5678", 5,2)
+    # book2 = Nonfictional("To Kill a Mockingbird", "Harper Lee", "456-7-8901", 3,5)
+
+    # borrower1 = Borrower("Aizaz", "123 Main St")
+    # borrower2 = Borrower("Amar", "456 Oak St")
+    # library.display_books()
+    # library.display_borrowers()
+    
+    # library.borrow_book(borrower1, book1)
+    
+    # library.display_books()
+    # library.display_borrowers()
+    
+    # library.return_book(borrower1, book1)
+    
+    # library.display_books()
+    # library.display_borrowers()
     
