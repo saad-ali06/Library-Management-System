@@ -3,8 +3,31 @@ from re import search
 import threading
 from threading import Lock
 from csv import DictReader,DictWriter
+import logging
+from os.path import getsize,exists
+
+#  Files_paths
 inventory_file = 'inventory.csv'
 borrowers_file = 'borrowers.csv'
+
+# logger created and configured.
+logger = logging.getLogger(__name__)
+foramtter = logging.Formatter("%(asctime)s %(name)s - %(levelname)s - %(message)s", datefmt='%y-%m-%d %H:%M:%S')
+file_handler = logging.FileHandler("book_record.log", mode='a')
+file_handler.setFormatter(foramtter)
+file_handler.setLevel(logging.DEBUG)
+logger.addHandler(file_handler)
+""" The stream Handler is to print on console"""
+stream_handler = logging.StreamHandler()
+logger.addHandler(stream_handler)
+
+def log_timestamp(func):
+    def wrapper(*args, **kwargs):
+        result = func(*args, **kwargs)
+        print(f"{func.__name__} executed.")
+        return result
+    return wrapper
+
 
 """
 The International Standard Book Number (ISBN) is a 13-digit number that 
@@ -33,6 +56,17 @@ def isbn_number_generator():
     isbn = isbn[0:3]+'-'+isbn[3]+'-'+isbn[5:]
     return isbn
     
+    
+""" 
+This function down below are for file Erroe handling.
+When open checks is file empty and path/dir exists
+"""    
+def is_file_empty_or_not_exists(file_path):
+    if exists(file_path):
+        return getsize(file_path) == 0
+    else:
+        print(f"The file {file_path} does not exist.")
+        return None 
 
 """ 
 Book Attributes: title, author, isbn, quantity_available  
@@ -124,23 +158,22 @@ class Library:
                 book1.quantity_available = book1.quantity_available + book.quantity_available
 
     
-    # @log_timestamp
+    @log_timestamp
     def borrow_book(self, borrower, book):
         self.lock.acquire()
         if book.quantity_available > 0:
             book.quantity_available -= 1
             borrower.borrowed_books.append(book)
-            print(f"{borrower.name} borrowed {book.title}")
+            logger.info(f"{borrower.name} borrowed {book.title}")
         else:
             print(f"Sorry, {book.title} is not available for borrowing.")
         self.lock.release()
 
     # Borrower returns the book.
-    # @log_timestamp
+    @log_timestamp
     def return_book(self, borrower, book):
         self.lock.acquire()
-        
-        book.quantity += 1
+        book.quantity_available += 1
         index_of_book = borrower.borrowed_books.index(book)
         # Remove book from borrower list.
         removed_book = borrower.borrowed_books.pop(index_of_book)
@@ -175,6 +208,17 @@ class Library:
 
     # This func Load Data back to library Class Attributes.
     def load_book_inventory(self, filename):
+        # This function return True if file empty or none if dir not exists.
+        f = is_file_empty_or_not_exists(filename)
+        if f or f==None:
+            print("File is empty..\n Feilds are writed on File...")
+            with open(filename, 'w', newline='') as csvfile:
+                fieldnames = ['Title', 'Author', 'ISBN', 'Quantity Available','Fiction','Type']
+                writer = DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+            
+        
+        # main loading to file starts here.
         with open(filename, 'r') as csvfile:
             reader = DictReader(csvfile)
             for row in reader:
@@ -214,6 +258,17 @@ class Library:
     
     # This Function Loads Borrowers Data
     def load_borrowers_data(self, filename):
+        # This function return True if file empty or none if dir not exists.
+        f = is_file_empty_or_not_exists(filename)
+        if f or f==None:
+            print("File is empty..\n Feilds are writed on File...")
+            with open(filename, 'w', newline='') as csvfile:
+                fieldnames = ['Name', 'Address', 'Borrowed Books']
+                writer = DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+        
+        
+        # main loading to file starts here.
         with open(filename, 'r') as csvfile:
             reader = DictReader(csvfile)
             for row in reader:
@@ -231,28 +286,34 @@ class Library:
               
                 
     def book_search(self,title=None):
-        find_book = []
-        find = False
         for book in self.books:
             if book.title == title:
-                find_book.append(book)
-                find = True
-        return find_book if find else None
+                return (True,book)
+        print
+        return (False,None)    
                 
     
     def book_search(self, isbn = None):
         if isvalid_isbn(isbn):
             for book in self.books:
                 if isbn == book.isbn:
-                    return True
+                    return (True,book)
         print("ISBN is invalid")
-        return False
+        return (False,None)
+    
+    def select_borrower(self, name):
+        for borrower in self.borrowers:
+            if name == borrower.name:
+                return (True,borrower)
+        print("Borrower not Found..")
+        return (False,None)
     
     
     # this finction simply show the books and there availablity.
     def display_books(self):
         f_books=[]
         nf_books=[]
+        print("\n---------display Books----------")
         for book in self.books:
             if book.fiction == True:
                 f_books.append(book)
@@ -260,24 +321,25 @@ class Library:
                 nf_books.append(book)
                 
         for f in f_books:
-            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6
-                         Other: 7
+            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6, Other: 7
                   Fictional Books are : """)
             print(f"Title = {f.title}; Auhtor = {f.author} ; Genre = {f.type}; Quantity = {f.quantity_available}")
         
         for nf in nf_books:
-            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6
-                         Other: 7
-                  Non - Fictional Books are : """)
+            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6, Other: 7
+                  Non-Fictional Books are : """)
             print(f"Title = {nf.title}; Auhtor = {nf.author} ; Genre = {nf.type}; Quantity = {nf.quantity_available}")
+        print("------END-------")
     
     
     def display_borrowers(self):
+        print("\n---------display Borrower----------")
         for borrower in self.borrowers:
             print(f'Borrower : {borrower.name} ')
             print("Borrowed Books are")
             for borrower_b in borrower.borrowed_books :
                 print(f'Title {borrower_b.title} ')
+        print("------END-------")
             
         
     """ 
@@ -328,8 +390,7 @@ class Main:
                 print("ISBN is Incorret..")
                 raise ValueError
             quantity_available = int(input("Enter Book quantity_available: "))
-            type = int(input("""For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6
-                         Other: 7
+            type = int(input("""For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6, Other: 7
                          Enter Book Genre: """))
             if fic:
                 return Fictional(title,author,isbn,quantity_available,type)
@@ -345,6 +406,11 @@ class Main:
         address = input("Enter Address of the Borrower: ")
         return Borrower(name,address) 
     
+    def add_borrower(self, borrower):
+        library.load_borrowers_data(borrowers_file)
+        library.add_borrower(borrower=borrower)
+        library.save_borrowers_data(borrowers_file)
+    
     def add_booK(self,book):
         # Lock.acquire()
         library.load_book_inventory(inventory_file)
@@ -358,21 +424,44 @@ if __name__ == "__main__" :
     # library.add_book(book)
     # library.save_book_inventory(inventory_file)
     library.load_book_inventory(inventory_file)
+    library.load_borrowers_data(borrowers_file)
     for book in library.books:
         print(book.title,type(book.fiction))
     
-    book = main.input_book()
-    if library.book_search(isbn=book.isbn):
-        library.append_book(book)
-        library.save_book_inventory(inventory_file)
-    else:
-        library.add_book(book)
-        library.save_book_inventory(inventory_file)
+    # book = main.input_book()
+    # if library.book_search(isbn=book.isbn):
+    #     library.append_book(book)
+    #     library.save_book_inventory(inventory_file)
+    # else:
+    #     library.add_book(book)
+    #     library.save_book_inventory(inventory_file)
         
+    # library.display_books()
+    # library.display_borrowers()
+    
+    # library.del_book(book)
+    
+    # library.display_books()
+    # library.display_borrowers()
+    
+    # borrower = main.input_borrower()
+    # main.add_borrower(borrower)
+    # library.display_borrowers()
+    
+    book1 = Fictional("The Catcher in the Rye", "J.D. Salinger", "123-4-5678", 5,2)
+    book2 = Nonfictional("To Kill a Mockingbird", "Harper Lee", "456-7-8901", 3,5)
+
+    borrower1 = Borrower("Aizaz", "123 Main St")
+    borrower2 = Borrower("Amar", "456 Oak St")
     library.display_books()
     library.display_borrowers()
     
-    library.del_book(book)
+    library.borrow_book(borrower1, book1)
+    
+    library.display_books()
+    library.display_borrowers()
+    
+    library.return_book(borrower1, book1)
     
     library.display_books()
     library.display_borrowers()
