@@ -1,7 +1,10 @@
 from random import random
 from re import search
 import threading
+from threading import Lock
 from csv import DictReader,DictWriter
+inventory_file = 'inventory.csv'
+borrowers_file = 'borrowers.csv'
 
 """
 The International Standard Book Number (ISBN) is a 13-digit number that 
@@ -113,7 +116,14 @@ class Library:
     # add Book to Borrower
     def add_borrower(self, borrower):
         self.borrowers.append(borrower)
+    
+    # same ISBN so add in quantity of Book .    
+    def append_book(self, book):
+        for book1 in self.books:
+            if book1.isbn == book.isbn:
+                book1.quantity_available = book1.quantity_available + book.quantity_available
 
+    
     # @log_timestamp
     def borrow_book(self, borrower, book):
         self.lock.acquire()
@@ -159,7 +169,7 @@ class Library:
                     'ISBN': book.isbn,
                     'Quantity Available': book.quantity_available,
                     'Fiction': book.fiction,
-                    'Tpye': book.type
+                    'Type': book.type
                 })
 
 
@@ -168,15 +178,23 @@ class Library:
         with open(filename, 'r') as csvfile:
             reader = DictReader(csvfile)
             for row in reader:
-                book = Book(
-                    title=row['Title'],
-                    author=row['Author'],
-                    isbn=row['ISBN'],
-                    quantity_available=int(row['Quantity Available']),
-                    fiction = bool(row['Fiction']),
-                    type = row['type']
-                )
-                self.books.append(book)        
+                if bool(row['Fiction']):
+                    book = Fictional(
+                        title=row['Title'],
+                        author=row['Author'],
+                        isbn=row['ISBN'],
+                        quantity_available=int(row['Quantity Available']),
+                        type = row['Type']
+                    )
+                else:
+                    book = Nonfictional(
+                        title=row['Title'],
+                        author=row['Author'],
+                        isbn=row['ISBN'],
+                        quantity_available=int(row['Quantity Available']),
+                        type = row['Type']
+                    )
+                self.books.append(book)            
 
 
     # This Function Saves Borrowers Data
@@ -226,39 +244,77 @@ class Library:
         if isvalid_isbn(isbn):
             for book in self.books:
                 if isbn == book.isbn:
-                    return book
-            print("ISBN is invalid")
-            return None
+                    return True
+        print("ISBN is invalid")
+        return False
+    
+    
+    # this finction simply show the books and there availablity.
+    def display_books(self):
+        f_books=[]
+        nf_books=[]
+        for book in self.books:
+            if book.fiction == True:
+                f_books.append(book)
+            else:
+                nf_books.append(book)
+                
+        for f in f_books:
+            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6
+                         Other: 7
+                  Fictional Books are : """)
+            print(f"Title = {f.title}; Auhtor = {f.author} ; Genre = {f.type}; Quantity = {f.quantity_available}")
         
+        for nf in nf_books:
+            print(""" Genre are display as For Romance: 1, Crime: 2, Comic: 3, Comedy: 4, Historic: 5, Horror: 6
+                         Other: 7
+                  Non - Fictional Books are : """)
+            print(f"Title = {nf.title}; Auhtor = {nf.author} ; Genre = {nf.type}; Quantity = {nf.quantity_available}")
+    
+    
+    def display_borrowers(self):
+        for borrower in self.borrowers:
+            print(f'Borrower : {borrower.name} ')
+            print("Borrowed Books are")
+            for borrower_b in borrower.borrowed_books :
+                print(f'Title {borrower_b.title} ')
+            
         
-    def simple_search(self, type, fic=None):
-        find_books = []
-        find = False
-        if fic == None:
-            for book in self.books:
-                if book.type == type:
-                    find_books.append(book)
-                    find = True
-        elif fic:
-            for book in self.books:
-                if fic == book.fiction and type == book.type:
-                    find_books.append(book)
-                    find = True
-        else:
-            for book in self.books:
-                if fic != book.fiction and type == book.type:
-                    find_books.append(book)
-                    find = True
-        return find_books if find else None
-        
+    """ 
+    This function is not working properly so commented out.
+    """    
+    # def simple_search(self, type, fic=None):
+    #     find_books = []
+    #     find = False
+    #     if fic == None:
+    #         for book in self.books:
+    #             if book.type == type:
+    #                 find_books.append(book)
+    #                 find = True
+    #     elif fic:
+    #         for book in self.books:
+    #             if fic == book.fiction and type == book.type:
+    #                 find_books.append(book)
+    #                 find = True
+    #     else:
+    #         for book in self.books:
+    #             if fic != book.fiction and type == book.type:
+    #                 find_books.append(book)
+    #                 find = True
+    #     return find_books if find else None
+     
+     
+library = Library()     
+   
 """
 This class going to help manage the main func which going to use adove classes.
 repeatedly used code are combined into functions in Main class.
 Define all the main functions like add, delete, borrow etc 
 """
+
 class Main:
     # going to define all function like input, borrow etc.
-    def input_book():
+    def input_book(self):
         try:
             #  title, author, isbn, quantity_available,type
             fic =  input("Enter Y/y For Fictional or any else for Non-Fictional(like N/n): ")
@@ -283,11 +339,45 @@ class Main:
             print("---Wrong Input ---\n Case by: ",e)
         
        
-    def input_borrower():
-        
+    def input_borrower(self):
+
         name = input("Enter name of the Borrower: ")
         address = input("Enter Address of the Borrower: ")
-        
         return Borrower(name,address) 
+    
+    def add_booK(self,book):
+        # Lock.acquire()
+        library.load_book_inventory(inventory_file)
+        library.add_book(book=book)
+        library.save_book_inventory(inventory_file)
+        # Lock.release()
         
-  
+if __name__ == "__main__" :
+    main = Main()
+    # book = main.input_book()
+    # library.add_book(book)
+    # library.save_book_inventory(inventory_file)
+    library.load_book_inventory(inventory_file)
+    for book in library.books:
+        print(book.title,type(book.fiction))
+    
+    book = main.input_book()
+    if library.book_search(isbn=book.isbn):
+        library.append_book(book)
+        library.save_book_inventory(inventory_file)
+    else:
+        library.add_book(book)
+        library.save_book_inventory(inventory_file)
+        
+    library.display_books()
+    library.display_borrowers()
+    
+    library.del_book(book)
+    
+    library.display_books()
+    library.display_borrowers()
+
+
+    
+    
+    
