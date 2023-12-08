@@ -11,15 +11,20 @@ inventory_file = 'inventory.csv'
 borrowers_file = 'borrowers.csv'
 
 # logger created and configured.
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG,
+                    filename="book_record.log",
+                    filemode="w",
+                    format="%(asctime)s %(name)s - %(levelname)s - %(message)s",
+                    datefmt='%d-%b-%y %H:%M:%S')
+logger1 = logging.getLogger(__name__)
 foramtter = logging.Formatter("%(asctime)s %(name)s - %(levelname)s - %(message)s", datefmt='%y-%m-%d %H:%M:%S')
-file_handler = logging.FileHandler("book_record.log", mode='a')
+file_handler = logging.FileHandler("book_record.log", mode='w')
 file_handler.setFormatter(foramtter)
-file_handler.setLevel(logging.DEBUG)
-logger.addHandler(file_handler)
+file_handler.setLevel(logging.INFO)
+logger1.addHandler(file_handler)
 """ The stream Handler is to print on console"""
 stream_handler = logging.StreamHandler()
-logger.addHandler(stream_handler)
+logger1.addHandler(stream_handler)
 
 def log_timestamp(func):
     def wrapper(*args, **kwargs):
@@ -164,7 +169,7 @@ class Library:
         if book.quantity_available > 0:
             book.quantity_available -= 1
             borrower.borrowed_books.append(book)
-            logger.info(f"{borrower.name} borrowed {book.title}")
+            logger1.info(f"{borrower.name} borrowed {book.title}")
         else:
             print(f"Sorry, {book.title} is not available for borrowing.")
         self.lock.release()
@@ -285,7 +290,7 @@ class Library:
                 self.borrowers.append(borrower)
               
                 
-    def book_search(self,title=None):
+    def book_search_by_title(self,title=None):
         for book in self.books:
             if book.title == title:
                 return (True,book)
@@ -419,6 +424,10 @@ class Main:
         # Lock.release()
         
 if __name__ == "__main__" :
+    print(""" 
+              WELCOME TO LIBRARY MANAGEMENT SYSTEM>
+              
+              """)
     main = Main()
     # book = main.input_book()
     # library.add_book(book)
@@ -466,7 +475,70 @@ if __name__ == "__main__" :
     library.display_books()
     library.display_borrowers()
 
-
-    
-    
+    while True:
+        try:  
+            a = input("Select Y/N for loading data from File..")
+            if a=='Y' or a=='y':
+                library.load_book_inventory()
+                library.load_borrowers_data()
+            a = input(""" ---Select U choice---
+                1 for add Book, 2 for add Borrower, 3 Display Books, 4 Display Borrowers  
+                5 for borrow Book, 6 for return a Book, 7 for delete book """)
+            if a == 1:
+                library.load_book_inventory()
+                book = main.input_book()
+                library.add_book(book)
+                library.save_book_inventory(inventory_file)
+            elif a == 2:
+                library.load_borrowers_data(borrowers_file)
+                borrower = main.input_borrower()
+                main.add_borrower(borrower)
+                library.save_borrowers_data(borrowers_file)
+                library.display_borrowers()
+            elif a == 3:
+                library.display_books()
+            elif a == 4:
+                library.display_borrowers()
+            elif a == 5:
+                library.display_borrowers()
+                name = input("Select a Borrower by input his/her name: ")
+                b,borrower = library.select_borrower(name)
+                if b:
+                    library.display_books()
+                    book_title = input("Enter Book Title : ")
+                    c,book=library.book_search_by_title(title=book_title)
+                    if c:
+                        library.borrow_book(borrower=borrower,book=book)
+                    else:
+                        print("Book not Found..")
+                else:
+                    print("Borrower not found..")
+                
+            elif a == 6:
+                library.display_borrowers()
+                name = input("Select a Borrower by input his/her name: ")
+                b,borrower = library.select_borrower(name)
+                if b:
+                    library.display_books()
+                    book_title = input("Enter Book Title : ")
+                    c,book=library.book_search_by_title(title=book_title)
+                    if c:
+                        library.return_book(borrower=borrower,book=book)
+                    else:
+                        print("Book not Found..")
+                else:
+                    print("Borrower not found..")
+            elif a == 7:
+                book_title = input("Enter Book Title : ")
+                c,book=library.book_search_by_title(title=book_title)
+                if c:
+                    library.del_book(book=book)
+                    print('Book deleted')
+                else:
+                    print("Book not Found..")
+            
+        
+            
+        except Exception as e:
+            print(f"Program Crashed Because of :\n{e}")
     
