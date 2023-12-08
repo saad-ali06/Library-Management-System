@@ -568,9 +568,6 @@ if __name__ == "__main__" :
                     print("Borrower not found")
                 
                     
-                
-
-            
         # except Exception as e:
         #     print(f"Program Crashed Because of :\n{e}")
         #     break
