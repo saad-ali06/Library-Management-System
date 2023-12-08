@@ -458,14 +458,14 @@ if __name__ == "__main__" :
                 9 for multiple books return 
                 """))
             if a == 1:
-                library.load_book_inventory(inventory_file)
+                # library.load_book_inventory(inventory_file)
                 book = main.input_book()
                 library.add_book(book)
                 library.save_book_inventory(inventory_file)
             elif a == 2:
-                library.load_borrowers_data(borrowers_file)
+                # library.load_borrowers_data(borrowers_file)
                 borrower = main.input_borrower()
-                main.add_borrower(borrower)
+                library.add_borrower(borrower)
                 library.save_borrowers_data(borrowers_file)
                 library.display_borrowers()
             elif a == 3:
@@ -512,11 +512,11 @@ if __name__ == "__main__" :
                     print("Book not Found..")
             
     # To handle concurrency we use multithreading.
-    # Because this task involved file I/O approuch in it.
+            # Because this task involved file I/O approuch in it.
     
             elif a == 8:
-                library.load_book_inventory(inventory_file)
-                library.load_borrowers_data(borrowers_file)
+                # library.load_book_inventory(inventory_file)
+                # library.load_borrowers_data(borrowers_file)
                 library.display_borrowers()
                 name = input("Select a Borrower by input his/her name: ")
                 b,borrower = library.select_borrower(name)
@@ -544,8 +544,8 @@ if __name__ == "__main__" :
                     print("Borrower not found")
             
             elif a == 9:
-                library.load_book_inventory(inventory_file)
-                library.load_borrowers_data(borrowers_file)
+                # library.load_book_inventory(inventory_file)
+                # library.load_borrowers_data(borrowers_file)
                 library.display_borrowers()
                 name = input("Select a Borrower by input his/her name: ")
                 b,borrower = library.select_borrower(name)
@@ -566,6 +566,8 @@ if __name__ == "__main__" :
                         i+=1
                     for thread in threads:
                         thread.join()
+                    library.save_book_inventory(inventory_file)
+                    library.save_borrowers_data(borrowers_file)
                     
                 else:
                     print("Borrower not found")
